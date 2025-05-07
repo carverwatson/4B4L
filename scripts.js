@@ -23,16 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const data = JSON.parse(localStorage.getItem('propertyData'));
             data[property].renter = {
-                name: form.querySelector('#renterName').value,
-                email: form.querySelector('#renterEmail').value,
-                phone: form.querySelector('#renterPhone').value,
+                name: form.querySelector('#renterName').value || '',
+                email: form.querySelector('#renterEmail').value || '',
+                phone: form.querySelector('#renterPhone').value || '',
                 numTenants: parseInt(form.querySelector('#numTenants').value) || 0,
                 numPets: parseInt(form.querySelector('#numPets').value) || 0,
-                moveInDate: form.querySelector('#moveInDate').value
+                moveInDate: form.querySelector('#moveInDate').value || ''
             };
             localStorage.setItem('propertyData', JSON.stringify(data));
             alert('Renter info saved!');
-            form.reset();
             updatePropertyPage(property);
         });
     });
@@ -46,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
             data[property].purchasePrice = parseFloat(form.querySelector('#purchasePrice').value) || 0;
             localStorage.setItem('propertyData', JSON.stringify(data));
             alert('Purchase price saved!');
-            form.reset();
             updatePropertyPage(property);
         });
     });
@@ -55,60 +53,67 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dataForm) {
         dataForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const property = document.getElementById('property').value;
+            const property = dataForm.querySelector('#property').value;
             const entry = {
-                date: document.getElementById('date').value,
-                rent: parseFloat(document.getElementById('rent').value) || 0,
-                lateFees: parseFloat(document.getElementById('lateFees').value) || 0,
-                expenses: parseFloat(document.getElementById('expenses').value) || 0,
-                expenseType: document.getElementById('expenseType').value,
-                paymentMethod: document.getElementById('paymentMethod').value,
-                rentPaidOnTime: document.getElementById('rentPaidOnTime').value
+                date: dataForm.querySelector('#date').value || '',
+                rent: parseFloat(dataForm.querySelector('#rent').value) || 0,
+                lateFees: parseFloat(dataForm.querySelector('#lateFees').value) || 0,
+                expenses: parseFloat(dataForm.querySelector('#expenses').value) || 0,
+                expenseType: dataForm.querySelector('#expenseType').value || '',
+                paymentMethod: dataForm.querySelector('#paymentMethod').value || '',
+                rentPaidOnTime: dataForm.querySelector('#rentPaidOnTime').value || 'Yes'
             };
 
             const data = JSON.parse(localStorage.getItem('propertyData'));
             data[property].financials.push(entry);
             localStorage.setItem('propertyData', JSON.stringify(data));
-            alert('Data saved successfully!');
+            alert('Financial data saved!');
             dataForm.reset();
             updatePropertyPage(property);
+            updateDeleteList(property); // Refresh delete list if property is selected
         });
     }
 
     // Handle delete functionality
     if (deleteProperty && entryList && deleteButton) {
         deleteProperty.addEventListener('change', () => {
-            const property = deleteProperty.value;
-            entryList.innerHTML = '';
-            deleteButton.disabled = true;
-            if (property) {
-                const data = JSON.parse(localStorage.getItem('propertyData'));
-                entryList.innerHTML = data[property].financials.map((entry, index) => `
-                    <div>
-                        <input type="checkbox" value="${index}" class="entry-checkbox">
-                        ${entry.date} - Rent: $${entry.rent.toFixed(2)}, Expenses: $${entry.expenses.toFixed(2)} (${entry.expenseType})
-                    </div>
-                `).join('');
-                document.querySelectorAll('.entry-checkbox').forEach(checkbox => {
-                    checkbox.addEventListener('change', () => {
-                        deleteButton.disabled = !document.querySelectorAll('.entry-checkbox:checked').length;
-                    });
-                });
-            }
+            updateDeleteList(deleteProperty.value);
         });
 
         deleteButton.addEventListener('click', () => {
             const property = deleteProperty.value;
+            if (!property) return;
             const data = JSON.parse(localStorage.getItem('propertyData'));
             const checkboxes = document.querySelectorAll('.entry-checkbox:checked');
             const indices = Array.from(checkboxes).map(cb => parseInt(cb.value)).sort((a, b) => b - a);
             indices.forEach(index => data[property].financials.splice(index, 1));
             localStorage.setItem('propertyData', JSON.stringify(data));
             alert('Selected entries deleted!');
-            deleteProperty.value = '';
-            entryList.innerHTML = '';
-            deleteButton.disabled = true;
+            updateDeleteList(property);
             updatePropertyPage(property);
+        });
+    }
+
+    // Update delete list
+    function updateDeleteList(property) {
+        if (!property || !entryList || !deleteButton) return;
+        entryList.innerHTML = '';
+        deleteButton.disabled = true;
+        const data = JSON.parse(localStorage.getItem('propertyData'));
+        if (data[property].financials.length === 0) {
+            entryList.innerHTML = '<p>No entries to delete.</p>';
+            return;
+        }
+        entryList.innerHTML = data[property].financials.map((entry, index) => `
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" value="${index}" class="entry-checkbox">
+                <span>${entry.date} - Rent: $${entry.rent.toFixed(2)}, Expenses: $${entry.expenses.toFixed(2)} (${entry.expenseType || 'None'})</span>
+            </div>
+        `).join('');
+        document.querySelectorAll('.entry-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                deleteButton.disabled = !document.querySelectorAll('.entry-checkbox:checked').length;
+            });
         });
     }
 
@@ -171,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Dashboard (unchanged)
+    // Dashboard
     if (performanceSummary && transactionHistory) {
         const data = JSON.parse(localStorage.getItem('propertyData'));
         let summaryHTML = '<h3 class="text-xl font-semibold mb-2">Performance Summary</h3>';
@@ -188,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
             data[property].financials.forEach(entry => {
                 totalIncome += entry.rent + entry.lateFees;
                 totalExpenses += entry.expenses;
-                historyHTML += `<tr><td class="border p-2">${entry.date}</td><td class="border p-2">${entry.rent.toFixed(2)}</td><td class="border p-2">${entry.lateFees.toFixed(2)}</td><td class="border p-2">${entry.expenses.toFixed(2)}</td><td class="border p-2">${entry.expenseType}</td><td class="border p-2">${entry.paymentMethod}</td><td class="border p-2">${entry.rentPaidOnTime}</td></tr>`;
+                historyHTML += `<tr><td class="border p-2">${entry.date}</td><td class="border p-2">${entry.rent.toFixed(2)}</td><td class="border p-2">${entry.lateFees.toFixed(2)}</td><td class="border p-2">${entry.expenses.toFixed(2)}</td><td class="border p-2">${entry.expenseType || 'None'}</td><td class="border p-2">${entry.paymentMethod || 'None'}</td><td class="border p-2">${entry.rentPaidOnTime}</td></tr>`;
             });
 
             const profit = totalIncome - totalExpenses;
