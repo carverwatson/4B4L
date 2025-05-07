@@ -22,7 +22,7 @@
         </ul>
     </nav>
     <main class="max-w-4xl mx-auto mt-8 p-4">
-        <section class="bg-white p-6 rounded-lg shadow-md">
+        <section class="bg-white p-6 rounded-lg shadow-md mb-6">
             <h2 class="text-2xl font-semibold mb-4">Enter Financial Data</h2>
             <form id="dataForm" class="space-y-4">
                 <div>
@@ -47,20 +47,29 @@
                     <input type="number" id="lateFees" class="w-full p-2 border rounded" min="0" step="0.01">
                 </div>
                 <div>
-                    <label for="expenses" class="block text-gray-700">Expenses ($)</label>
+                    <label for="expenses" class="block text-gray-700">Expenses ($)</labelWK
                     <input type="number" id="expenses" class="w-full p-2 border rounded" min="0" step="0.01">
                 </div>
                 <div>
-                    <label for="taxes" class="block text-gray-700">Taxes ($)</label>
-                    <input type="number" id="taxes" class="w-full p-2 border rounded" min="0" step="0.01">
+                    <label for="expenseType" class="block text-gray-700">Expense Type</label>
+                    <select id="expenseType" class="w-full p-2 border rounded">
+                        <option value="">Select Type</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Taxes">Taxes</option>
+                        <option value="Renovations">Renovations</option>
+                        <option value="Other">Other</option>
+                    </select>
                 </div>
                 <div>
-                    <label for="initialCost" class="block text-gray-700">Initial Cost ($)</label>
-                    <input type="number" id="initialCost" class="w-full p-2 border rounded" min="0" step="0.01">
-                </div>
-                <div>
-                    <label for="renovations" class="block text-gray-700">Renovation Costs ($)</label>
-                    <input type="number" id="renovations" class="w-full p-2 border rounded" min="0" step="0.01">
+                    <label for="paymentMethod" class="block text-gray-700">Payment Method</label>
+                    <select id="paymentMethod" class="w-full p-2 border rounded">
+                        <option value="">Select Method</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Check">Check</option>
+                        <option value="Credit Card">Credit Card</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                    </select>
                 </div>
                 <div>
                     <label for="rentPaidOnTime" class="block text-gray-700">Rent Paid On Time?</label>
@@ -72,9 +81,24 @@
                 <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Submit</button>
             </form>
         </section>
+        <section class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-semibold mb-4">Delete Entry</h2>
+            <div>
+                <label for="deleteProperty" class="block text-gray-700">Select Property</label>
+                <select id="deleteProperty" class="w-full p-2 border rounded mb-4">
+                    <option value="">Select Property</option>
+                    <option value="Morrison">Morrison</option>
+                    <option value="Orange">Orange</option>
+                    <option value="Osthoff">Osthoff</option>
+                    <option value="Spring">Spring</option>
+                </select>
+            </div>
+            <div id="entryList" class="mb-4"></div>
+            <button id="deleteButton" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700" disabled>Delete Selected</button>
+        </section>
     </main>
     <footer class="bg-blue-600 text-white text-center py-4 mt-8">
-        <p>&copy; 2025 4B4L Properties. All rights reserved.</p>
+        <p>© 2025 4B4L Properties</p>
     </footer>
     <script src="scripts.js"></script>
 </body>
