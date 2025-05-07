@@ -1,12 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize localStorage
+    console.log('Initializing localStorage for propertyData');
     if (!localStorage.getItem('propertyData')) {
-        localStorage.setItem('propertyData', JSON.stringify({
+        const initialData = {
             Morrison: { financials: [], renter: {}, purchasePrice: 0 },
             Orange: { financials: [], renter: {}, purchasePrice: 0 },
             Osthoff: { financials: [], renter: {}, purchasePrice: 0 },
             Spring: { financials: [], renter: {}, purchasePrice: 0 }
-        }));
+        };
+        localStorage.setItem('propertyData', JSON.stringify(initialData));
+        console.log('Created new propertyData:', initialData);
+    } else {
+        console.log('propertyData exists:', JSON.parse(localStorage.getItem('propertyData')));
     }
 
     // Handle renter info form
@@ -26,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 localStorage.setItem('propertyData', JSON.stringify(data));
                 alert('Renter info saved!');
+                console.log('Renter info saved for', property, data[property].renter);
                 updatePropertyPage(property);
             } catch (error) {
                 console.error('Error saving renter info:', error);
@@ -44,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 data[property].purchasePrice = parseFloat(form.querySelector('#purchasePrice').value) || 0;
                 localStorage.setItem('propertyData', JSON.stringify(data));
                 alert('Purchase price saved!');
+                console.log('Purchase price saved for', property, data[property].purchasePrice);
                 updatePropertyPage(property);
             } catch (error) {
                 console.error('Error saving purchase price:', error);
@@ -76,71 +83,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 data[property].financials.push(entry);
                 localStorage.setItem('propertyData', JSON.stringify(data));
                 alert('Financial data saved!');
+                console.log('Financial data saved for', property, data[property].financials);
                 dataForm.reset();
                 updatePropertyPage(property);
-                const deleteProperty = document.getElementById('deleteProperty');
-                if (deleteProperty && deleteProperty.value === property) {
-                    updateDeleteList(property);
-                }
             } catch (error) {
                 console.error('Error saving financial data:', error);
                 alert('Failed to save financial data.');
             }
-        });
-    }
-
-    // Handle delete functionality
-    const deleteProperty = document.getElementById('deleteProperty');
-    const entryList = document.getElementById('entryList');
-    const deleteButton = document.getElementById('deleteButton');
-    if (deleteProperty && entryList && deleteButton) {
-        deleteProperty.addEventListener('change', () => {
-            try {
-                updateDeleteList(deleteProperty.value);
-            } catch (error) {
-                console.error('Error updating delete list:', error);
-                entryList.innerHTML = '<p>Error loading entries.</p>';
-            }
-        });
-        deleteButton.addEventListener('click', () => {
-            try {
-                const property = deleteProperty.value;
-                if (!property) return;
-                const data = JSON.parse(localStorage.getItem('propertyData'));
-                const checkboxes = document.querySelectorAll('.entry-checkbox:checked');
-                const indices = Array.from(checkboxes).map(cb => parseInt(cb.value)).sort((a, b) => b - a);
-                indices.forEach(index => data[property].financials.splice(index, 1));
-                localStorage.setItem('propertyData', JSON.stringify(data));
-                alert('Selected entries deleted!');
-                updateDeleteList(property);
-                updatePropertyPage(property);
-            } catch (error) {
-                console.error('Error deleting entries:', error);
-                alert('Failed to delete entries.');
-            }
-        });
-    }
-
-    // Update delete list
-    function updateDeleteList(property) {
-        if (!property || !entryList || !deleteButton) return;
-        entryList.innerHTML = '';
-        deleteButton.disabled = true;
-        const data = JSON.parse(localStorage.getItem('propertyData'));
-        if (!data[property] || !data[property].financials || data[property].financials.length === 0) {
-            entryList.innerHTML = '<p>No entries to delete.</p>';
-            return;
-        }
-        entryList.innerHTML = data[property].financials.map((entry, index) => `
-            <div class="flex items-center space-x-2">
-                <input type="checkbox" value="${index}" class="entry-checkbox">
-                <span>${entry.date} - Rent: $${entry.rent.toFixed(2)}, Expenses: $${entry.expenses.toFixed(2)} (${entry.expenseType || 'None'}), Taxes: $${entry.taxes.toFixed(2)}, Renovations: $${entry.renovations.toFixed(2)}</span>
-            </div>
-        `).join('');
-        document.querySelectorAll('.entry-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                deleteButton.disabled = !document.querySelectorAll('.entry-checkbox:checked').length;
-            });
         });
     }
 
@@ -150,63 +99,80 @@ document.addEventListener('DOMContentLoaded', () => {
         const overallPerformance = document.getElementById(`overallPerformance-${property}`);
         const renterForm = document.getElementById(`renterForm-${property}`);
         const initialCostForm = document.getElementById(`initialCostForm-${property}`);
-        if (monthlyAccounting && overallPerformance && renterForm && initialCostForm) {
-            try {
-                const data = JSON.parse(localStorage.getItem('propertyData'))[property];
-                const financials = data.financials || [];
-                const renter = data.renter || {};
-                const purchasePrice = data.purchasePrice || 0;
+        
+        if (!monthlyAccounting || !overallPerformance || !renterForm || !initialCostForm) {
+            console.log('Skipping update for', property, 'due to missing DOM elements');
+            return;
+        }
 
-                // Populate renter form
-                renterForm.querySelector('#renterName').value = renter.name || '';
-                renterForm.querySelector('#renterEmail').value = renter.email || '';
-                renterForm.querySelector('#renterPhone').value = renter.phone || '';
-                renterForm.querySelector('#numTenants').value = renter.numTenants || '';
-                renterForm.querySelector('#numPets').value = renter.numPets || '';
-                renterForm.querySelector('#moveInDate').value = renter.moveInDate || '';
+        try {
+            const data = JSON.parse(localStorage.getItem('propertyData'));
+            if (!data || !data[property]) {
+                console.error('No data found for', property);
+                monthlyAccounting.innerHTML = '<p>No data available.</p>';
+                overallPerformance.innerHTML = '<p>No data available.</p>';
+                return;
+            }
 
-                // Populate purchase price
-                initialCostForm.querySelector('#purchasePrice').value = purchasePrice || '';
+            const financials = data[property].financials || [];
+            const renter = data[property].renter || {};
+            const purchasePrice = data[property].purchasePrice || 0;
 
-                // Monthly accounting
-                const monthlyData = {};
-                financials.forEach(entry => {
-                    const month = entry.date.slice(0, 7); // YYYY-MM
-                    if (!monthlyData[month]) {
-                        monthlyData[month] = { rent: 0, lateFees: 0, expenses: 0, taxes: 0, renovations: 0, profit: 0 };
-                    }
-                    monthlyData[month].rent += entry.rent;
-                    monthlyData[month].lateFees += entry.lateFees;
-                    monthlyData[month].expenses += entry.expenses;
-                    monthlyData[month].taxes += entry.taxes;
-                    monthlyData[month].renovations += entry.renovations;
-                    monthlyData[month].profit += (entry.rent + entry.lateFees - entry.expenses - entry.taxes - entry.renovations);
-                });
+            console.log('Updating property page for', property, { financials, renter, purchasePrice });
 
-                let accountingHTML = '<table class="w-full border-collapse"><thead><tr class="bg-gray-200"><th class="border p-2">Month</th><th class="border p-2">Rent ($)</th><th class="border p-2">Late Fees ($)</th><th class="border p-2">Expenses ($)</th><th class="border p-2">Taxes ($)</th><th class="border p-2">Renovations ($)</th><th class="border p-2">Profit ($)</th></tr></thead><tbody>';
+            // Populate renter form
+            renterForm.querySelector('#renterName').value = renter.name || '';
+            renterForm.querySelector('#renterEmail').value = renter.email || '';
+            renterForm.querySelector('#renterPhone').value = renter.phone || '';
+            renterForm.querySelector('#numTenants').value = renter.numTenants || '';
+            renterForm.querySelector('#numPets').value = renter.numPets || '';
+            renterForm.querySelector('#moveInDate').value = renter.moveInDate || '';
+
+            // Populate purchase price
+            initialCostForm.querySelector('#purchasePrice').value = purchasePrice || '';
+
+            // Monthly accounting
+            const monthlyData = {};
+            financials.forEach(entry => {
+                const month = entry.date ? entry.date.slice(0, 7) : 'Unknown';
+                if (!monthlyData[month]) {
+                    monthlyData[month] = { rent: 0, lateFees: 0, expenses: 0, taxes: 0, renovations: 0, profit: 0 };
+                }
+                monthlyData[month].rent += entry.rent || 0;
+                monthlyData[month].lateFees += entry.lateFees || 0;
+                monthlyData[month].expenses += entry.expenses || 0;
+                monthlyData[month].taxes += entry.taxes || 0;
+                monthlyData[month].renovations += entry.renovations || 0;
+                monthlyData[month].profit += (entry.rent + entry.lateFees - entry.expenses - entry.taxes - entry.renovations);
+            });
+
+            let accountingHTML = '<table class="w-full border-collapse"><thead><tr class="bg-gray-200"><th class="border p-2">Month</th><th class="border p-2">Rent ($)</th><th class="border p-2">Late Fees ($)</th><th class="border p-2">Expenses ($)</th><th class="border p-2">Taxes ($)</th><th class="border p-2">Renovations ($)</th><th class="border p-2">Profit ($)</th></tr></thead><tbody>';
+            if (Object.keys(monthlyData).length === 0) {
+                accountingHTML += '<tr><td colspan="7" class="border p-2 text-center">No financial data.</td></tr>';
+            } else {
                 for (const month in monthlyData) {
                     accountingHTML += `<tr><td class="border p-2">${month}</td><td class="border p-2">${monthlyData[month].rent.toFixed(2)}</td><td class="border p-2">${monthlyData[month].lateFees.toFixed(2)}</td><td class="border p-2">${monthlyData[month].expenses.toFixed(2)}</td><td class="border p-2">${monthlyData[month].taxes.toFixed(2)}</td><td class="border p-2">${monthlyData[month].renovations.toFixed(2)}</td><td class="border p-2">${monthlyData[month].profit.toFixed(2)}</td></tr>`;
                 }
-                accountingHTML += '</tbody></table>';
-                monthlyAccounting.innerHTML = accountingHTML;
-
-                // Overall performance
-                const totalIncome = financials.reduce((sum, entry) => sum + entry.rent + entry.lateFees, 0);
-                const totalExpenses = financials.reduce((sum, entry) => sum + entry.expenses + entry.taxes + entry.renovations, 0);
-                const totalProfit = totalIncome - totalExpenses;
-                const roi = purchasePrice ? ((totalProfit / purchasePrice) * 100).toFixed(2) : 0;
-                overallPerformance.innerHTML = `
-                    <p><strong>Purchase Price:</strong> $${purchasePrice.toFixed(2)}</p>
-                    <p><strong>Total Income:</strong> $${totalIncome.toFixed(2)}</p>
-                    <p><strong>Total Expenses:</strong> $${totalExpenses.toFixed(2)}</p>
-                    <p><strong>Total Profit:</strong> $${totalProfit.toFixed(2)}</p>
-                    <p><strong>Overall ROI:</strong> ${roi}%</p>
-                `;
-            } catch (error) {
-                console.error(`Error updating property page ${property}:`, error);
-                monthlyAccounting.innerHTML = '<p>Error loading financial data.</p>';
-                overallPerformance.innerHTML = '<p>Error loading performance data.</p>';
             }
+            accountingHTML += '</tbody></table>';
+            monthlyAccounting.innerHTML = accountingHTML;
+
+            // Overall performance
+            const totalIncome = financials.reduce((sum, entry) => sum + (entry.rent || 0) + (entry.lateFees || 0), 0);
+            const totalExpenses = financials.reduce((sum, entry) => sum + (entry.expenses || 0) + (entry.taxes || 0) + (entry.renovations || 0), 0);
+            const totalProfit = totalIncome - totalExpenses;
+            const roi = purchasePrice ? ((totalProfit / purchasePrice) * 100).toFixed(2) : 0;
+            overallPerformance.innerHTML = `
+                <p><strong>Purchase Price:</strong> $${purchasePrice.toFixed(2)}</p>
+                <p><strong>Total Income:</strong> $${totalIncome.toFixed(2)}</p>
+                <p><strong>Total Expenses:</strong> $${totalExpenses.toFixed(2)}</p>
+                <p><strong>Total Profit:</strong> $${totalProfit.toFixed(2)}</p>
+                <p><strong>Overall ROI:</strong> ${roi}%</p>
+            `;
+        } catch (error) {
+            console.error(`Error updating property page ${property}:`, error);
+            monthlyAccounting.innerHTML = '<p>Error loading financial data.</p>';
+            overallPerformance.innerHTML = '<p>Error loading performance data.</p>';
         }
     }
 
@@ -216,28 +182,48 @@ document.addEventListener('DOMContentLoaded', () => {
     if (performanceSummary && transactionHistory) {
         try {
             const data = JSON.parse(localStorage.getItem('propertyData'));
+            if (!data) {
+                console.error('No property data found in localStorage');
+                performanceSummary.innerHTML = '<p>No data available.</p>';
+                transactionHistory.innerHTML = '<p>No data available.</p>';
+                return;
+            }
+
+            console.log('Updating dashboard with data:', data);
+
             let summaryHTML = '<table class="w-full border-collapse"><thead><tr class="bg-gray-200"><th class="border p-2">Property</th><th class="border p-2">Total Income</th><th class="border p-2">Total Expenses</th><th class="border p-2">Profit</th><th class="border p-2">ROI (%)</th></tr></thead><tbody>';
             let historyHTML = '';
+            let hasData = false;
+
             for (const property in data) {
                 const financials = data[property].financials || [];
                 const purchasePrice = data[property].purchasePrice || 0;
                 let totalIncome = 0;
                 let totalExpenses = 0;
+
                 historyHTML += `<h4 class="text-lg font-semibold mt-4">${property}</h4>`;
                 historyHTML += '<table class="w-full border-collapse mb-4"><thead><tr class="bg-gray-200"><th class="border p-2">Date</th><th class="border p-2">Rent ($)</th><th class="border p-2">Late Fees ($)</th><th class="border p-2">Expenses ($)</th><th class="border p-2">Expense Type</th><th class="border p-2">Payment Method</th><th class="border p-2">Taxes ($)</th><th class="border p-2">Renovations ($)</th><th class="border p-2">Rent On Time</th></tr></thead><tbody>';
-                financials.forEach(entry => {
-                    totalIncome += entry.rent + entry.lateFees;
-                    totalExpenses += entry.expenses + entry.taxes + entry.renovations;
-                    historyHTML += `<tr><td class="border p-2">${entry.date}</td><td class="border p-2">${entry.rent.toFixed(2)}</td><td class="border p-2">${entry.lateFees.toFixed(2)}</td><td class="border p-2">${entry.expenses.toFixed(2)}</td><td class="border p-2">${entry.expenseType || 'None'}</td><td class="border p-2">${entry.paymentMethod || 'None'}</td><td class="border p-2">${entry.taxes.toFixed(2)}</td><td class="border p-2">${entry.renovations.toFixed(2)}</td><td class="border p-2">${entry.rentPaidOnTime}</td></tr>`;
-                });
+                
+                if (financials.length === 0) {
+                    historyHTML += '<tr><td colspan="9" class="border p-2 text-center">No transactions.</td></tr>';
+                } else {
+                    hasData = true;
+                    financials.forEach(entry => {
+                        totalIncome += (entry.rent || 0) + (entry.lateFees || 0);
+                        totalExpenses += (entry.expenses || 0) + (entry.taxes || 0) + (entry.renovations || 0);
+                        historyHTML += `<tr><td class="border p-2">${entry.date || 'Unknown'}</td><td class="border p-2">${(entry.rent || 0).toFixed(2)}</td><td class="border p-2">${(entry.lateFees || 0).toFixed(2)}</td><td class="border p-2">${(entry.expenses || 0).toFixed(2)}</td><td class="border p-2">${entry.expenseType || 'None'}</td><td class="border p-2">${entry.paymentMethod || 'None'}</td><td class="border p-2">${(entry.taxes || 0).toFixed(2)}</td><td class="border p-2">${(entry.renovations || 0).toFixed(2)}</td><td class="border p-2">${entry.rentPaidOnTime || 'Yes'}</td></tr>`;
+                    });
+                }
+                historyHTML += '</tbody></table>';
+
                 const profit = totalIncome - totalExpenses;
                 const roi = purchasePrice ? ((profit / purchasePrice) * 100).toFixed(2) : 0;
                 summaryHTML += `<tr><td class="border p-2">${property}</td><td class="border p-2">${totalIncome.toFixed(2)}</td><td class="border p-2">${totalExpenses.toFixed(2)}</td><td class="border p-2">${profit.toFixed(2)}</td><td class="border p-2">${roi}</td></tr>`;
-                historyHTML += '</tbody></table>';
             }
+
             summaryHTML += '</tbody></table>';
-            performanceSummary.innerHTML = summaryHTML;
-            transactionHistory.innerHTML = historyHTML;
+            performanceSummary.innerHTML = hasData ? summaryHTML : '<p>No financial data available.</p>';
+            transactionHistory.innerHTML = hasData ? historyHTML : '<p>No transactions available.</p>';
         } catch (error) {
             console.error('Error updating dashboard:', error);
             performanceSummary.innerHTML = '<p>Error loading summary.</p>';
