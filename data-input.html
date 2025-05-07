@@ -22,7 +22,7 @@
         </ul>
     </nav>
     <main class="max-w-4xl mx-auto mt-8 p-4">
-        <section class="bg-white p-6 rounded-lg shadow-md mb-6">
+        <section class="bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-2xl font-semibold mb-4">Enter Financial Data</h2>
             <form id="dataForm" class="space-y-4">
                 <div>
@@ -88,21 +88,6 @@
                 </div>
                 <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Submit</button>
             </form>
-        </section>
-        <section class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-2xl font-semibold mb-4">Delete Entry</h2>
-            <div>
-                <label for="deleteProperty" class="block text-gray-700">Select Property</label>
-                <select id="deleteProperty" class="w-full p-2 border rounded mb-4">
-                    <option value="">Select Property</option>
-                    <option value="Morrison">Morrison</option>
-                    <option value="Orange">Orange</option>
-                    <option value="Osthoff">Osthoff</option>
-                    <option value="Spring">Spring</option>
-                </select>
-            </div>
-            <div id="entryList" class="mb-4"></div>
-            <button id="deleteButton" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700" disabled>Delete Selected</button>
         </section>
     </main>
     <footer class="bg-blue-600 text-white text-center py-4 mt-8">
